@@ -11,6 +11,10 @@ set -uo pipefail
 WORK=${WORK:-/workspace}
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 PORT=${SERVICE_PORT:-8080}
+# Bind loopback when reaching the box over an SSH tunnel (preferred): the service
+# is then not reachable from the internet at all, even if the port is published.
+# Use SERVICE_HOST=0.0.0.0 only if you deliberately want a public endpoint.
+HOST=${SERVICE_HOST:-0.0.0.0}
 MODEL=${MODEL_DIR:-$WORK/models/qwen-image-2.1-turbo}
 
 PY=""
@@ -24,5 +28,5 @@ if [ -z "${SERVICE_TOKEN:-}" ]; then
   echo "WARNING: SERVICE_TOKEN is not set; the endpoint will accept anyone who can reach it." >&2
 fi
 
-exec "$PY" "$ROOT/service/serve.py" --model "$MODEL" --host 0.0.0.0 --port "$PORT" \
+exec "$PY" "$ROOT/service/serve.py" --model "$MODEL" --host "$HOST" --port "$PORT" \
   ${SERVICE_ATTENTION:+--attention "$SERVICE_ATTENTION"}
