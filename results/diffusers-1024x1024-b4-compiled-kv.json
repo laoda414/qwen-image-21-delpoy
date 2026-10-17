@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "when": "2026-10-17T21:54:18Z",
+    "engine": "diffusers",
+    "model": "/workspace/models/qwen-image-2.1-turbo",
+    "torch": "2.11.0+cu128",
+    "cuda": "12.8",
+    "diffusers": "0.41.0.dev0",
+    "gpu": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+    "capability": [
+      12,
+      0
+    ],
+    "width": 1024,
+    "height": 1024,
+    "attention": "flash",
+    "compiled": true,
+    "kv_cache": true
+  },
+  "levels": [
+    {
+      "batch": 4,
+      "runs": 2,
+      "wall_s": 10.12,
+      "wall_all_s": [
+        10.12,
+        10.13
+      ],
+      "images": 4,
+      "img_per_min": 23.71,
+      "per_image_s": 2.53,
+      "vram_peak_mb": 56753.0,
+      "scaling_eff": null
+    }
+  ],
+  "encode": [
+    {
+      "batch": 4,
+      "encode_batch_s": 0.038,
+      "encode_single_s": 0.075,
+      "amortised_s_per_prompt": 0.009
+    }
+  ]
+}

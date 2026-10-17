@@ -1,0 +1,165 @@
+{
+  "meta": {
+    "when": "2026-10-17T21:40:07Z",
+    "gpu": {
+      "nvidia_smi": "NVIDIA RTX PRO 6000 Blackwell Server Edition, 97887 MiB, 580.95.05, 12.0"
+    },
+    "denoiser": "/workspace/models/denoiser-Q8_0.gguf",
+    "encoder": "/workspace/models/encoder-Q8_0.gguf",
+    "vae": "/workspace/models/qwen_image_2.1_vae_bf16.safetensors",
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "cfg": 1.0,
+    "api": "sdapi",
+    "flash_attn": true,
+    "bin": "/workspace/bin/sd-server"
+  },
+  "startup": [
+    {
+      "port": 1234,
+      "startup_s": 1.0,
+      "vram_after_mb": 559.0,
+      "vram_after_warm_mb": 19481.0
+    },
+    {
+      "port": 1235,
+      "startup_s": 1.0,
+      "vram_after_mb": 1114.0,
+      "vram_after_warm_mb": 35629.0
+    },
+    {
+      "port": 1236,
+      "startup_s": 1.0,
+      "vram_after_mb": 1669.0,
+      "vram_after_warm_mb": 51777.0
+    },
+    {
+      "port": 1237,
+      "startup_s": 1.0,
+      "vram_after_mb": 2225.0,
+      "vram_after_warm_mb": 67927.0
+    },
+    {
+      "port": 1238,
+      "startup_s": 1.0,
+      "vram_after_mb": 2780.0,
+      "vram_after_warm_mb": 84075.0
+    },
+    {
+      "port": 1239,
+      "startup_s": 1.0,
+      "vram_after_mb": 3335.0,
+      "vram_after_warm_mb": 92577.0
+    }
+  ],
+  "levels": [
+    {
+      "workers": 1,
+      "per_worker": 3,
+      "images": 3,
+      "failed": 0,
+      "wall_s": 13.13,
+      "img_per_min": 13.71,
+      "per_image_s": {
+        "mean": 4.38,
+        "p50": 4.3,
+        "max": 4.74
+      },
+      "vram_peak_mb": 96205.0,
+      "gpu_util_avg": 77.4,
+      "errors": [],
+      "scaling_eff": 1.0
+    },
+    {
+      "workers": 2,
+      "per_worker": 3,
+      "images": 6,
+      "failed": 0,
+      "wall_s": 23.56,
+      "img_per_min": 15.28,
+      "per_image_s": {
+        "mean": 7.76,
+        "p50": 8.04,
+        "max": 8.46
+      },
+      "vram_peak_mb": 96205.0,
+      "gpu_util_avg": 97.0,
+      "errors": [],
+      "scaling_eff": 0.557
+    },
+    {
+      "workers": 3,
+      "per_worker": 3,
+      "images": 9,
+      "failed": 0,
+      "wall_s": 35.7,
+      "img_per_min": 15.13,
+      "per_image_s": {
+        "mean": 11.24,
+        "p50": 10.55,
+        "max": 16.56
+      },
+      "vram_peak_mb": 96205.0,
+      "gpu_util_avg": 94.9,
+      "errors": [],
+      "scaling_eff": 0.368
+    },
+    {
+      "workers": 4,
+      "per_worker": 3,
+      "images": 12,
+      "failed": 0,
+      "wall_s": 46.55,
+      "img_per_min": 15.47,
+      "per_image_s": {
+        "mean": 14.75,
+        "p50": 14.63,
+        "max": 18.72
+      },
+      "vram_peak_mb": 95677.0,
+      "gpu_util_avg": 98.1,
+      "errors": [],
+      "scaling_eff": 0.282
+    },
+    {
+      "workers": 5,
+      "per_worker": 3,
+      "images": 15,
+      "failed": 0,
+      "wall_s": 59.26,
+      "img_per_min": 15.19,
+      "per_image_s": {
+        "mean": 19.29,
+        "p50": 18.24,
+        "max": 25.61
+      },
+      "vram_peak_mb": 96735.0,
+      "gpu_util_avg": 97.4,
+      "errors": [],
+      "scaling_eff": 0.222
+    },
+    {
+      "workers": 6,
+      "per_worker": 3,
+      "images": 18,
+      "failed": 0,
+      "wall_s": 68.85,
+      "img_per_min": 15.69,
+      "per_image_s": {
+        "mean": 22.25,
+        "p50": 21.75,
+        "max": 27.65
+      },
+      "vram_peak_mb": 96681.0,
+      "gpu_util_avg": 98.4,
+      "errors": [],
+      "scaling_eff": 0.191
+    }
+  ],
+  "concurrency_probe": {
+    "two_sequential_s": 7.77,
+    "two_parallel_s": 7.52,
+    "ratio": 1.931
+  }
+}

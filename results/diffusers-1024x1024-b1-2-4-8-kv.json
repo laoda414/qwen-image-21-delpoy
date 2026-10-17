@@ -1,0 +1,98 @@
+{
+  "meta": {
+    "when": "2026-10-17T21:51:07Z",
+    "engine": "diffusers",
+    "model": "/workspace/models/qwen-image-2.1-turbo",
+    "torch": "2.11.0+cu128",
+    "cuda": "12.8",
+    "diffusers": "0.41.0.dev0",
+    "gpu": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+    "capability": [
+      12,
+      0
+    ],
+    "width": 1024,
+    "height": 1024,
+    "attention": "flash",
+    "compiled": false,
+    "kv_cache": true
+  },
+  "levels": [
+    {
+      "batch": 1,
+      "runs": 2,
+      "wall_s": 2.09,
+      "wall_all_s": [
+        2.11,
+        2.07
+      ],
+      "images": 1,
+      "img_per_min": 28.65,
+      "per_image_s": 2.09,
+      "vram_peak_mb": 37700.0,
+      "scaling_eff": null
+    },
+    {
+      "batch": 2,
+      "runs": 2,
+      "wall_s": 7.04,
+      "wall_all_s": [
+        6.97,
+        7.1
+      ],
+      "images": 2,
+      "img_per_min": 17.05,
+      "per_image_s": 3.52,
+      "vram_peak_mb": 43860.0,
+      "scaling_eff": 0.298
+    },
+    {
+      "batch": 4,
+      "runs": 2,
+      "wall_s": 10.42,
+      "wall_all_s": [
+        10.43,
+        10.41
+      ],
+      "images": 4,
+      "img_per_min": 23.03,
+      "per_image_s": 2.6,
+      "vram_peak_mb": 56753.0,
+      "scaling_eff": 0.201
+    },
+    {
+      "batch": 8,
+      "runs": 2,
+      "wall_s": 22.57,
+      "wall_all_s": [
+        23.23,
+        21.92
+      ],
+      "images": 8,
+      "img_per_min": 21.26,
+      "per_image_s": 2.82,
+      "vram_peak_mb": 82556.0,
+      "scaling_eff": 0.093
+    }
+  ],
+  "encode": [
+    {
+      "batch": 2,
+      "encode_batch_s": 0.036,
+      "encode_single_s": 0.076,
+      "amortised_s_per_prompt": 0.018
+    },
+    {
+      "batch": 4,
+      "encode_batch_s": 0.036,
+      "encode_single_s": 0.031,
+      "amortised_s_per_prompt": 0.009
+    },
+    {
+      "batch": 8,
+      "encode_batch_s": 0.062,
+      "encode_single_s": 0.07,
+      "amortised_s_per_prompt": 0.008
+    }
+  ]
+}
