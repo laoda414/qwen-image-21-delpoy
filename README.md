@@ -109,9 +109,31 @@ needs none of that, and it reproduces exactly what was measured on the RTX PRO
 Rent any box with CUDA ≥ 12.8 and ≥ 100 GB disk, and give it one line:
 
 ```bash
-# Vast on-start field, RunPod start command, or ssh:
-curl -fsSL https://raw.githubusercontent.com/OWNER/REPO/main/onstart.sh | bash
+# Vast on-start field, RunPod start command, or over ssh.
+# The env vars go to bash, not to curl — onstart.sh needs REPO_URL to clone.
+curl -fsSL https://raw.githubusercontent.com/OWNER/REPO/main/onstart.sh \
+  | REPO_URL=https://github.com/OWNER/REPO.git SERVICE_TOKEN=change-me PORT=8080 bash
 ```
+
+Or, with the repo already on the box: `SERVICE_TOKEN=... PORT=8080 ./onstart.sh`.
+A public repo is simplest (there are no secrets in it); a private one needs a
+token inside `REPO_URL`.
+
+### Push it (from this machine)
+
+Windows git/curl here use schannel, which is broken (`SEC_E_NO_CREDENTIALS`);
+OpenSSL works, so:
+
+```powershell
+git config --global http.sslBackend openssl   # permanent fix, one time
+cd projects\qwen-image-gpu
+git remote add origin https://github.com/OWNER/REPO.git
+git push -u origin main
+```
+
+The repo is already initialised with LF pinned via `.gitattributes` — that matters,
+because CRLF in a shell script makes `bash` fail on Linux with `$'\r': command not
+found`.
 
 `onstart.sh` clones the repo if needed, runs `bootstrap.sh`, then serves:
 
@@ -217,6 +239,11 @@ container image itself (build on a CPU VM, per Phase 2) and the app-side
 
 | path | role |
 |---|---|
+| `onstart.sh` | **entry point**: clone if standalone, bootstrap, serve |
+| `bootstrap.sh` | idempotent provisioning: interpreter, torch cu128, diffusers, 32 GB weights |
+| `serve.sh` | starts the service with `SERVICE_TOKEN` / `SERVICE_PORT` |
+| `Dockerfile` | optional runtime image (~5–6 GB, weights fetched at runtime) |
+| `tools/checksh.py` | static shell checks (balance, LF, quotes) — no bash needed |
 | `bench/onstart.sh` | sd.cpp bootstrap: build for sm_120 + GGUF weights |
 | `bench/bench.py` | sd.cpp discovery + K-process concurrency sweep |
 | `bench/diffusers_stage.sh` | diffusers bootstrap: torch cu128, diffusers main, bf16 weights |
