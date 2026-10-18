@@ -9,3 +9,4 @@ models/
 scratch/
 results/*.png
 !results/service-12-panels-sample.png
+local/
