@@ -126,9 +126,19 @@ character sheets as `image` / `images` on the same `POST /v1/images/generations`
 - Map `ImageGenRequest.styleReferences[].image` (base64 or data URL) into
   `images`. **`strength` has no equivalent here and must be dropped** — do not
   fake it, and do not fail the request if it is present.
-- ⚠️ **Unmeasured cost.** All throughput numbers in §7 are text-only. References
-  add encoded tokens to the conditioning, so expect slower panels and more VRAM.
-  Measure on the first box before promising panel latency with references.
+- **Measured cost** (832×1216, through the service, tunnel included):
+
+  | config | median | vs text-only |
+  |---|---:|---:|
+  | text-only | 5.2 s | 1.00x |
+  | 1 reference | 7.5 s | 1.43x |
+  | 3 references | 9.1 s | 1.74x |
+
+  So send the minimum references a panel needs — 1 for a solo panel, 2–3 only
+  when characters share a frame. Multi-reference is genuinely used (a 3-reference
+  request composed all three characters), and the model may return a *multi-panel
+  collage* if the prompt says "comic panel" — prompt for a single panel if the app
+  expects one image per panel.
 
 ## 6. Mapping to `ImageProvider`
 

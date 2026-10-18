@@ -159,6 +159,50 @@ On a resumed instance (weights and venv intact):
 Expected shape (to confirm, not assume): more references -> more per-panel time
 and VRAM, with the same "one image already saturates the GPU" behaviour.
 
+## The reference path, measured (same pipeline, character sheets attached)
+
+Qwen-Image-2.1 is one model for t2i + edit + multi-reference, so a comic with
+recurring characters runs the same endpoint with `image`/`images` attached. All
+earlier numbers were text-only; these are not.
+
+Measured through the live service over an SSH tunnel, 832x1216, 2 runs each,
+latency includes transport:
+
+| config | median | vs text-only | note |
+|---|---:|---:|---|
+| text-only | 5.2 s | 1.00x | ~2.5 s of that is tunnel transfer |
+| 1 reference | 7.5 s | **1.43x** | +~2.3 s |
+| 3 references | 9.1 s | **1.74x** | +~1.3 s per extra reference |
+
+- The list form is really used: a 3-reference request returned a **composite
+  strip** containing characters from all three inputs, so `image=[...]` is
+  accepted (not silently collapsed to one). Max 4 enforced by the service.
+- Cost scales with reference count, so the app should send the **minimum** sheets
+  a panel needs (1 for a solo panel, 2-3 only when characters share a frame).
+- Prompt discipline matters: with multiple references the model will happily draw
+  a multi-panel collage when asked for "a comic panel". Frame the prompt for a
+  single panel if one image per panel is wanted.
+
+## Second host: Max-Q is slower, and the tunnel costs something
+
+Same deploy (repo + stock CUDA image, clean volume), different card:
+
+| | RTX PRO 6000 **Server** Edition | RTX PRO 6000 **Max-Q** Workstation |
+|---|---|---|
+| 12-panel burst | 32.3 s, 22.3 img/min, p50 18.4 s | 39.9 s, **18.1 img/min**, p50 22.5 s |
+| single panel, end to end | 5.1 s (preflight) | 5.1 s (preflight) |
+| generation implied | ~2.0 s | **~2.6 s** |
+| clean deploy to serving | ~3 min | ~2 min |
+
+The Max-Q variant is power-limited, and the effect is visible: ~30% slower per
+panel at the same price tier. Worth checking which variant an offer is before
+renting — the name says "RTX PRO 6000" either way, and `nvidia-smi` reports
+`Max-Q Workstation Edition` vs `Server Edition`.
+
+Tunnel overhead is real but bounded: at ~0.9 MB/s, a 1.1 MB PNG costs ~2.5 s per
+panel on top of generation. That is 50% of a 5 s panel, which is why JPEG output
+(~7x smaller) is the single highest-value change left for remote use.
+
 ## Reproducing
 
 ```bash
