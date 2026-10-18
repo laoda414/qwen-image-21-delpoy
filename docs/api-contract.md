@@ -225,3 +225,38 @@ if (!res.ok) throw new ProviderError('unknown', 'qwen-image', `HTTP ${res.status
 const { data } = await res.json() as { data: { b64_json: string }[] };
 return data.map(d => ({ base64: d.b64_json, mime: 'image/png' }));
 ```
+
+## 11. Client integration status (reddit-comic-studio, 2026-10-18)
+
+Written by the app side, for whoever maintains the service — these are the things
+that came up while wiring a real client against a live box, not requests to change
+the API:
+
+- **Implemented** in `apps/server/src/providers/qwenImage.ts`: explicit
+  `width`/`height` (never `size`), `images[]` from character sheets with
+  `strength` dropped, `seed` echoed back because the server does not return it,
+  `usd: 0`, PNG only, `negativePrompt` omitted with a one-time warning.
+- **Determinism confirmed and relied on:** identical `(prompt, seed, references)`
+  returns byte-identical PNGs across calls (verified twice on the 832×1216
+  panel path). The app dedupes by content hash on the strength of that, and it is
+  what makes "keep this face, re-render the scene" safe. If anything in the
+  pipeline ever becomes non-deterministic (a sampling tweak, TF32 flags, a
+  different attention kernel), the app will silently stop recognising identical
+  renders — worth a line in the changelog if that happens.
+- **Retry policy actually used:** `503` → retry every 10 s up to 120 s
+  (model-load window); `500` → one retry; `400`/`401` → never. A refused
+  connection is surfaced as `unreachable` with the SSH tunnel named, because that
+  is the failure users actually hit.
+- **Concurrency used:** 2 (`COMIC_IMAGE_CONCURRENCY`), plus a `/healthz` brake
+  that waits while `queue_depth + inflight` ≥ 3. Sequential panel loops are the
+  default for a whole book, and that matched the measured 8 s/panel with two
+  references.
+- **Not yet exercised:** `n > 1` (the app renders one image per request so a bad
+  panel does not delay the rest), the 4-reference ceiling, and `1536²`+ sizes.
+- The prompt side learned one thing the hard way: any prompt mentioning comic
+  panels needs an explicit "one single image, not a collage, not a page of panels"
+  clause, or the result cannot be used as one panel. Since the client-side prompt
+  rework (subject/action first, references named `<image1>`/`<image2>`, 2000-char
+  budget ≈ 500 tokens), two-character panels send 1600–1700 chars and still render
+  in 8 s, so the encoder is nowhere near saturated at that length.
+

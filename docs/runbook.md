@@ -95,6 +95,21 @@ Or, from Git Bash / the repo: `./tunnel.sh root@93.91.156.106 46075 18080 10100`
 `-N` = no shell, just forwarding. Closing the window (or Ctrl-C) tears the tunnel
 down, and the app will see connection refused until you start it again.
 
+### Better: a supervised tunnel that reconnects
+
+A bare `ssh -N -L` dies on a network blip or a box reboot, and the app then sees
+`ECONNREFUSED` with no obvious cause. During someone else's testing that is the
+difference between "the app is broken" and "the tunnel dropped":
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\tunnel-supervise.ps1 `
+  -Box 93.91.156.106 -Port 46075 -Log ..\..\scratch\tunnel.log
+```
+
+It retries with backoff, logs every reconnect, and only exits when the box is
+unreachable five times in a row — which is the signal that the instance is
+stopped or its SSH port changed, not that the tunnel had a hiccup.
+
 ---
 
 ## 4. Verify, in this order
