@@ -119,6 +119,33 @@ Or, with the repo already on the box: `SERVICE_TOKEN=... PORT=8080 ./onstart.sh`
 A public repo is simplest (there are no secrets in it); a private one needs a
 token inside `REPO_URL`.
 
+### Reach it over an SSH tunnel, not the public port
+
+Bind the service to loopback and forward it, so nothing is internet-facing even
+though Vast publishes a port:
+
+```bash
+SERVICE_HOST=127.0.0.1 SERVICE_PORT=10100 SERVICE_TOKEN=... ./serve.sh   # on the box
+./tunnel.sh root@HOST SSH_PORT                                          # on your machine
+# service is now http://127.0.0.1:18080
+```
+
+TLS comes from SSH, no token crosses the wire, and the app's base URL is always
+`127.0.0.1:<local>` — so the box's shifting public IP only concerns the tunnel,
+not the comic pipeline.
+
+### Gate the host before trusting it
+
+```bash
+python tools/preflight.py --url http://127.0.0.1:18080 --token ... --runs 2
+```
+
+It generates one real panel end to end and grades it: **PASS** ≤15 s, **WARN**
+≤60 s, **FAIL** above. This exists because a host was found where the GPU served
+in 2 s but the network path managed 12 KB/s — 84 s per panel — over *both* HTTP
+and SSH, while the box's own egress was excellent. The GPU was never the problem;
+the route was. Re-rent rather than debug that.
+
 ### Push it (from this machine)
 
 Windows git/curl here use schannel, which is broken (`SEC_E_NO_CREDENTIALS`);
