@@ -170,3 +170,44 @@ Check what the client believes before touching the service.
 Add a dated `##` section: context → what changed → evidence → decision → follow-ups.
 Keep numbers with units and say which prompt/seed they came from; keep secrets out
 (the token appears nowhere in this file, deliberately).
+
+## 2026-10-20 — "Which workflow?" — A/B against the official blueprint
+
+Owner asked whether the bridge uses `image_qwen_image_2_1_image_edit`. It uses **no
+template**: `build_graph()` emits an API-format graph directly, derived from the
+owner's saved `Qwen_Image_2.1_GGUF_uncensored.json` plus `/object_info` signatures.
+
+Investigating that question surfaced something worth keeping: ComfyUI ships
+**blueprints** in `/workspace/ComfyUI/blueprints/` (subgraph-wrapped JSON, so
+`definitions.subgraphs[0].nodes` is where the real graph lives):
+
+| blueprint | shape |
+|---|---|
+| Text to Image (Qwen-Image) | 19 nodes: `EmptySD3LatentImage` (1328²), **`ModelSamplingAuraFlow(3.1)`**, `CLIPTextEncode`×2, optional `LoraLoaderModelOnly` (Lightning 8-step), KSampler 8 steps cfg 1 |
+| Image Edit (Qwen 2511) | 15 nodes: `TextEncodeQwenImageEditPlus`, `FluxKontextImageScale`, `FluxKontextMultiReferenceLatentMethod`, `CFGNorm(1)`, `ModelSamplingAuraFlow(3.1)`, KSampler 40 steps cfg 4, `VAEEncode` |
+
+Two conclusions:
+
+1. **The edit blueprint needs an edit checkpoint** (`qwen_image_edit_2511_bf16`), which
+   this box does not have. So references are not "a template switch" — they need a
+   different model file, not just a different graph.
+2. The t2i blueprint sets a **flow-matching shift (3.1)** and 16-channel latents; the
+   bridge did neither. Missing shift is a real sampling difference, not obviously a bug.
+
+A/B, same prompt and seed, 25 steps CFG 1, 832×1216:
+
+| variant | time | result |
+|---|---:|---|
+| `bridge` (TextEncodeQwenImage21 + EmptyLatentImage) | 4.2 s | colour comic art, more detailed/sketchy, dynamic framing |
+| `blueprint` (EmptySD3LatentImage + ModelSamplingAuraFlow 3.1 + CLIPTextEncode×2) | 8.0 s | colour comic art, flatter cel shading, more settled framing |
+
+Both are valid; they are different trajectories rather than one being correct. An
+earlier impression that the model only produced monochrome woodcut art was wrong —
+it came from prompts that literally asked for "thick ink outlines, screentone
+shading", not from the missing shift node. Recorded because it is exactly the sort
+of conclusion that gets asserted from a single sample.
+
+Decision: ship both as `COMFY_VARIANT`, default **blueprint** (it matches the
+official graph and the flatter look the app's style prompt asks for), with
+`COMFY_SHIFT` exposed. Health now reports `variant` and `shift` so this can never be
+ambiguous again. One render through the app contract after the switch: 6.6 s.

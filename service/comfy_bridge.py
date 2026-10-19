@@ -40,6 +40,13 @@ STEPS = int(os.environ.get("COMFY_STEPS", "25"))
 CFG = float(os.environ.get("COMFY_CFG", "1.0"))
 SAMPLER = os.environ.get("COMFY_SAMPLER", "euler")
 SCHEDULER = os.environ.get("COMFY_SCHEDULER", "simple")
+# "blueprint" mirrors ComfyUI's official "Text to Image (Qwen-Image)" blueprint:
+# EmptySD3LatentImage + ModelSamplingAuraFlow(shift) + two CLIPTextEncode nodes.
+# "bridge" is the simpler hand-built shape (TextEncodeQwenImage21 +
+# EmptyLatentImage). A/B'd on one prompt and seed: both yield colour comic art,
+# with different trajectories and framing; neither is broken.
+VARIANT = os.environ.get("COMFY_VARIANT", "blueprint")
+SHIFT = float(os.environ.get("COMFY_SHIFT", "3.1"))
 MODEL_ID = os.environ.get("COMFY_MODEL_ID", "qwen-image-2.1-turbo")
 
 # ComfyUI is a single GPU pipeline; keep one graph in flight so queue depth is ours
@@ -60,33 +67,59 @@ def call(path: str, payload=None, timeout: float = 60):
 def build_graph(prompt: str, negative: str, width: int, height: int,
                 seed: int, steps: int, cfg: float, sampler: str, scheduler: str,
                 prefix: str):
-    """Qwen-Image graph: native UNETLoader (int8 checkpoint), qwen_image CLIP type,
-    the Qwen 2.1 text-encode node, then a plain KSampler.
+    """Qwen-Image text-to-image graph in one of two shapes (COMFY_VARIANT).
 
-    The text-encode node emits both conditionings and carries the model's trained
-    resolution, which is why the resolution goes there as well as on the latent.
+    Common: native UNETLoader (int8 checkpoint, not GGUF), qwen_image CLIP type,
+    the Qwen 2.1 VAE, plain KSampler, SaveImage.
+
+    blueprint (default) — mirrors ComfyUI's official "Text to Image (Qwen-Image)"
+    blueprint: EmptySD3LatentImage (16-channel latents), ModelSamplingAuraFlow with
+    shift 3.1 (the flow-matching shift the official graph sets explicitly), and two
+    CLIPTextEncode nodes.
+
+    bridge — the simpler shape: TextEncodeQwenImage21, which emits both
+    conditionings and carries the trained resolution, plus EmptyLatentImage.
     """
-    return {
+    graph = {
         "1": {"class_type": "UNETLoader",
               "inputs": {"unet_name": UNET, "weight_dtype": "default"}},
         "2": {"class_type": "CLIPLoader",
               "inputs": {"clip_name": CLIP, "type": "qwen_image"}},
         "3": {"class_type": "VAELoader", "inputs": {"vae_name": VAE}},
-        "4": {"class_type": "TextEncodeQwenImage21",
-              "inputs": {"clip": ["2", 0], "prompt": prompt,
-                         "negative_prompt": negative,
-                         "resolution": max(width, height)}},
-        "5": {"class_type": "EmptyLatentImage",
-              "inputs": {"width": width, "height": height, "batch_size": 1}},
-        "6": {"class_type": "KSampler",
-              "inputs": {"model": ["1", 0], "seed": seed, "steps": steps, "cfg": cfg,
-                         "sampler_name": sampler, "scheduler": scheduler,
-                         "positive": ["4", 0], "negative": ["4", 1],
-                         "latent_image": ["5", 0], "denoise": 1.0}},
         "7": {"class_type": "VAEDecode", "inputs": {"samples": ["6", 0], "vae": ["3", 0]}},
         "8": {"class_type": "SaveImage",
               "inputs": {"images": ["7", 0], "filename_prefix": prefix}},
     }
+
+    if VARIANT == "bridge":
+        graph["4"] = {"class_type": "TextEncodeQwenImage21",
+                      "inputs": {"clip": ["2", 0], "prompt": prompt,
+                                 "negative_prompt": negative,
+                                 "resolution": max(width, height)}}
+        graph["5"] = {"class_type": "EmptyLatentImage",
+                      "inputs": {"width": width, "height": height, "batch_size": 1}}
+        graph["6"] = {"class_type": "KSampler",
+                      "inputs": {"model": ["1", 0], "seed": seed, "steps": steps,
+                                 "cfg": cfg, "sampler_name": sampler,
+                                 "scheduler": scheduler, "positive": ["4", 0],
+                                 "negative": ["4", 1], "latent_image": ["5", 0],
+                                 "denoise": 1.0}}
+    else:
+        graph["4"] = {"class_type": "CLIPTextEncode",
+                      "inputs": {"clip": ["2", 0], "text": prompt}}
+        graph["9"] = {"class_type": "CLIPTextEncode",
+                      "inputs": {"clip": ["2", 0], "text": negative}}
+        graph["5"] = {"class_type": "EmptySD3LatentImage",
+                      "inputs": {"width": width, "height": height, "batch_size": 1}}
+        graph["10"] = {"class_type": "ModelSamplingAuraFlow",
+                       "inputs": {"model": ["1", 0], "shift": SHIFT}}
+        graph["6"] = {"class_type": "KSampler",
+                      "inputs": {"model": ["10", 0], "seed": seed, "steps": steps,
+                                 "cfg": cfg, "sampler_name": sampler,
+                                 "scheduler": scheduler, "positive": ["4", 0],
+                                 "negative": ["9", 0], "latent_image": ["5", 0],
+                                 "denoise": 1.0}}
+    return graph
 
 
 def generate_one(prompt, negative, width, height, seed, steps, cfg, sampler,
@@ -153,7 +186,7 @@ def build_app() -> FastAPI:
                     "vram_free_gb": round(dev.get("vram_free", 0) / 2**30, 1),
                     "queue_running": len(queue.get("queue_running", [])),
                     "queue_pending": len(queue.get("queue_pending", [])),
-                    "engine_model": UNET, "steps": STEPS, "cfg": CFG,
+                    "engine_model": UNET, "variant": VARIANT, "shift": SHIFT, "steps": STEPS, "cfg": CFG,
                     "sampler": SAMPLER, "scheduler": SCHEDULER,
                     "references": "ignored",
                     "served": STATE["served"],

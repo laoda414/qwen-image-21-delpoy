@@ -42,6 +42,8 @@ KSampler → VAEDecode → SaveImage`, latent size from the request.
 | cfg | **1.0** | halves generation time (no uncond pass) |
 | sampler / scheduler | `euler` / `simple` | |
 | size | 832×1216 default | ~1 MP, the measured-safe envelope |
+| variant | `blueprint` (default) / `bridge` | `blueprint` = the official ComfyUI t2i shape (`EmptySD3LatentImage` + `ModelSamplingAuraFlow` + `CLIPTextEncode`×2); `bridge` = `TextEncodeQwenImage21` shape. A/B'd on one prompt+seed: both valid, different trajectories and framing |
+| shift | **3.1** | flow-matching shift used by `blueprint`, taken from the official blueprint |
 
 Measured at 832×1216, three **distinct** prompts, through the tunnel:
 
