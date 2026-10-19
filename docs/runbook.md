@@ -144,7 +144,27 @@ if FAIL, the GPU is fine and the *path* is bad; destroy and re-rent.
 | app config | `COMIC_IMAGE_BASE_URL=http://127.0.0.1:18080`, `COMIC_IMAGE_TOKEN=<TOKEN>` |
 
 Re-renting a box changes **only** `BOX_HOST`/`BOX_SSH_PORT` in §3. The service
-port, the local port, the token and the app config stay identical.
+port, the local port, the token and the app config stay identical — *if you reuse
+the same token*. If the token changes, read the next section first.
+
+### The re-rent trap: the app remembers yesterday's token
+
+The comic app persists image settings in its SQLite DB (`settings_kv`), and those
+**beat `.env`**. A new box with a new `SERVICE_TOKEN` therefore produces
+`401 bad or missing bearer token` on every render while the service is perfectly
+healthy — the app is simply replaying the old token.
+
+Fix it at the source, then restart the app server (it caches config at startup):
+
+```powershell
+python tools\app-token.py --token <new token>            # backs up the DB first
+python tools\app-token.py --token <new token> --dry-run  # just look
+```
+
+Or keep the token stable across re-rents by exporting the same `SERVICE_TOKEN`
+every time — simplest of all. The app's Settings screen performs the same write,
+so changing it there works too.
+
 
 ---
 
